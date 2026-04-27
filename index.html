@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📚 書籍情報登録アプリ</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Hiragino Kana Gothic ProN','Yu Gothic',sans-serif;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);min-height:100vh;color:#e0e0e0;padding:14px;}
+  .wrap{max-width:860px;margin:0 auto;}
+  h1{text-align:center;font-size:1.45em;margin-bottom:3px;color:#c8b4ff;}
+  .sub{text-align:center;font-size:0.78em;color:#777;margin-bottom:16px;}
+  .card{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px;margin-bottom:14px;}
+  .card h2{font-size:0.9em;color:#c8b4ff;margin-bottom:10px;}
+  .tabs{display:flex;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.1);}
+  .tb{flex:1;padding:7px 4px;background:none;border:none;color:#777;cursor:pointer;font-size:0.78em;border-bottom:2px solid transparent;transition:all .2s;text-align:center;}
+  .tb.on{color:#c8b4ff;border-bottom-color:#c8b4ff;}
+  .row{display:flex;gap:8px;}
+  .row input{flex:1;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:7px;padding:9px 11px;color:#fff;font-size:0.9em;}
+  .row input:focus{outline:none;border-color:#c8b4ff;}
+  .row input::placeholder{color:#555;}
+  .btn{padding:9px 16px;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;font-weight:bold;transition:background .2s;white-space:nowrap;}
+  .pu{background:#7c3aed;color:#fff;} .pu:hover{background:#6d28d9;}
+  .gr{background:#059669;color:#fff;} .gr:hover{background:#047857;}
+  .rd{background:#dc2626;color:#fff;}
+  .cy{background:#0284c7;color:#fff;}
+  .btn-sm{padding:4px 9px;font-size:0.76em;}
+  .dz{border:2px dashed rgba(200,180,255,0.35);border-radius:9px;padding:16px;text-align:center;cursor:pointer;background:rgba(124,58,237,0.04);transition:all .2s;}
+  .dz:hover,.dz.ov{border-color:#c8b4ff;background:rgba(124,58,237,0.1);}
+  .dz .ico{font-size:1.8em;}
+  .dz p{font-size:0.78em;color:#777;margin-top:4px;}
+  #thumb{max-height:90px;border-radius:5px;margin-top:8px;display:none;}
+  #oscr{font-size:0.76em;color:#aaa;margin-top:5px;min-height:1em;}
+  #stat{padding:8px 11px;border-radius:7px;font-size:0.82em;margin-top:8px;display:none;}
+  .sl{background:rgba(200,180,255,0.1);border:1px solid #c8b4ff;color:#c8b4ff;}
+  .ss{background:rgba(5,150,105,0.15);border:1px solid #059669;color:#6ee7b7;}
+  .se{background:rgba(220,38,38,0.15);border:1px solid #dc2626;color:#fca5a5;}
+  .si{background:rgba(2,132,199,0.15);border:1px solid #0284c7;color:#7dd3fc;}
+  .sp{display:inline-block;width:11px;height:11px;border:2px solid rgba(200,180,255,0.3);border-top-color:#c8b4ff;border-radius:50%;animation:sp .8s linear infinite;vertical-align:middle;margin-right:4px;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  #preview{display:none;border:2px solid #059669;}
+  #preview h2{color:#6ee7b7;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  @media(max-width:500px){.grid{grid-template-columns:1fr;}}
+  .fg{display:flex;flex-direction:column;gap:2px;}
+  .fg.full{grid-column:1/-1;}
+  .fg label{font-size:0.68em;color:#999;}
+  .fg input{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);border-radius:5px;padding:6px 8px;color:#fff;font-size:0.84em;}
+  .fg input:focus{outline:none;border-color:#c8b4ff;}
+  .fg input.gn{border-color:#059669!important;background:rgba(5,150,105,0.1)!important;}
+  .ph{font-size:0.66em;color:#6ee7b7;margin-top:1px;display:none;}
+  .cov{max-height:60px;border-radius:4px;margin-top:3px;}
+  .sbadge{display:inline-block;font-size:0.66em;padding:1px 6px;border-radius:9px;margin-left:5px;vertical-align:middle;}
+  .bo{background:#7c3aed;color:#fff;} .bg{background:#dc2626;color:#fff;}
+  .bn{background:#0284c7;color:#fff;} .bm{background:#444;color:#ccc;}
+  .add-btn{display:block;width:100%;padding:13px;margin-top:12px;font-size:0.95em;font-weight:bold;background:#059669;color:#fff;border:none;border-radius:9px;cursor:pointer;transition:background .2s;}
+  .add-btn:hover{background:#047857;}
+  .clr-row{text-align:right;margin-top:6px;}
+  .tw{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:0.78em;}
+  th{background:rgba(124,58,237,0.3);color:#c8b4ff;padding:7px 7px;text-align:left;white-space:nowrap;}
+  td{padding:5px 7px;border-bottom:1px solid rgba(255,255,255,0.05);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  tr:hover td{background:rgba(255,255,255,0.03);}
+  .nd{text-align:center;color:#555;padding:20px 0;font-size:0.84em;}
+  .ar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;justify-content:flex-end;}
+  .tri{padding:6px 8px;margin-bottom:4px;background:rgba(255,255,255,0.05);border-radius:5px;cursor:pointer;border:1px solid transparent;transition:border-color .15s;font-size:0.84em;}
+  .tri:hover{border-color:#c8b4ff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📚 書籍情報登録アプリ</h1>
+  <p class="sub">スクショ・ISBN・タイトルから書誌情報を自動検索 → エクセル出力</p>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tb on" onclick="stab('image')">📷 画像から</button>
+      <button class="tb" onclick="stab('isbn')">🔢 ISBNで</button>
+      <button class="tb" onclick="stab('title')">🔤 タイトルで</button>
+    </div>
+    <div id="t-image">
+      <div class="dz" id="dz" onclick="document.getElementById('fi').click()"
+        ondragover="dov(event)" ondragleave="dlv(event)" ondrop="ddp(event)">
+        <div class="ico">📱</div>
+        <p>スクショをタップしてアップロード</p>
+        <input type="file" id="fi" accept="image/*,.heic,.heif" style="display:none" onchange="ofc(event)">
+        <img id="thumb">
+      </div>
+      <div id="oscr"></div>
+    </div>
+    <div id="t-isbn" style="display:none;">
+      <div class="row">
+        <input id="ii" type="text" placeholder="ISBN-13 (例: 9784652207567)" maxlength="17">
+        <button class="btn pu" onclick="doISBN()">🔍 検索</button>
+      </div>
+      <p style="font-size:0.68em;color:#555;margin-top:4px;">バーコード下の13桁数字</p>
+    </div>
+    <div id="t-title" style="display:none;">
+      <div class="row">
+        <input id="ti" type="text" placeholder="書名またはキーワード">
+        <button class="btn pu" onclick="doTitle()">🔍 検索</button>
+      </div>
+      <div id="tres" style="margin-top:7px;"></div>
+    </div>
+    <div id="stat"></div>
+  </div>
+
+  <div class="card" id="preview">
+    <h2>📖 書誌情報を確認 <span id="sbg" class="sbadge"></span></h2>
+    <div class="grid">
+      <div class="fg full"><label>書名 ショメイ</label><input id="ft" type="text"></div>
+      <div class="fg"><label>巻号 カンゴ</label><input id="fv" type="text"></div>
+      <div class="fg"><label>著者名 チョシャメイ</label><input id="fa" type="text"></div>
+      <div class="fg"><label>出版社 シュッパンシャ</label><input id="fp" type="text"></div>
+      <div class="fg"><label>出版年月日（例: 2026.4.27）</label><input id="fd" type="text"></div>
+      <div class="fg">
+        <label>定価(円)（税込）</label>
+        <input id="fc" type="text" placeholder="例: 1870">
+        <div class="ph" id="ph"></div>
+      </div>
+      <div class="fg"><label>ISBN</label><input id="fn" type="text"></div>
+      <div class="fg"><label>NDC</label><input id="fnd" type="text" placeholder="例: 913.6"></div>
+      <div class="fg"><label>書影</label><img id="fimg" class="cov" style="display:none;"></div>
+    </div>
+    <button class="add-btn" onclick="doAdd()">✅ この本をリストに追加する</button>
+    <div class="clr-row"><button class="btn cy btn-sm" onclick="hidePreview()">✕ クリア</button></div>
+  </div>
+
+  <div class="card" id="listcard">
+    <h2>📋 登録リスト <span id="cnt" style="font-size:0.78em;color:#888;"></span></h2>
+    <div class="tw">
+      <table>
+        <thead><tr><th>書名</th><th>巻号</th><th>著者名</th><th>出版社</th><th>出版年月</th><th>定価(円)</th><th>ISBN</th><th>NDC</th><th>操作</th></tr></thead>
+        <tbody id="tb"><tr><td colspan="9" class="nd">まだ書籍が登録されていません</td></tr></tbody>
+      </table>
+    </div>
+    <div class="ar">
+      <button class="btn pu" onclick="doExcel()">📥 Excelダウンロード</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var books = [];
+
+function esc(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function stab(t) {
+  ['image', 'isbn', 'title'].forEach(function(x) {
+    document.getElementById('t-' + x).style.display = x === t ? '' : 'none';
+  });
+  document.querySelectorAll('.tb').forEach(function(b, i) {
+    b.classList.toggle('on', ['image', 'isbn', 'title'][i] === t);
+  });
+  hstat();
+}
+
+function showStat(m, t) {
+  var e = document.getElementById('stat');
+  e.className = t === 'l' ? 'sl' : t === 's' ? 'ss' : t === 'e' ? 'se' : 'si';
+  e.innerHTML = (t === 'l' ? '<span class="sp"></span>' : '') + esc(m);
+  e.style.display = 'block';
+}
+function hstat() { document.getElementById('stat').style.display = 'none'; }
+
+function goTo(id) {
+  setTimeout(function() {
+    var e = document.getElementById(id);
+    if (e) e.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 80);
+}
+
+function showPreview() { document.getElementById('preview').style.display = 'block'; }
+function hidePreview() {
+  document.getElementById('preview').style.display = 'none';
+  ['ft', 'fv', 'fa', 'fp', 'fd', 'fc', 'fn', 'fnd'].forEach(function(id) {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('fimg').style.display = 'none';
+  document.getElementById('ph').style.display = 'none';
+  document.getElementById('fc').classList.remove('gn');
+  document.getElementById('sbg').textContent = '';
+  document.getElementById('sbg').className = 'sbadge';
+}
+
+function dov(e) { e.preventDefault(); document.getElementById('dz').classList.add('ov'); }
+function dlv(e) { document.getElementById('dz').classList.remove('ov'); }
+function ddp(e) {
+  e.preventDefault();
+  document.getElementById('dz').classList.remove('ov');
+  var f = e.dataTransfer.files;
+  if (f.length) pimg(f[0]);
+}
+function ofc(e) { if (e.target.files.length) pimg(e.target.files[0]); }
+function pimg(f) {
+  var isHeic = /\.(heic|heif)$/i.test(f.name) || f.type === 'image/heic' || f.type === 'image/heif';
+  if (isHeic) {
+    document.getElementById('oscr').textContent = '🔄 HEIC → JPEG 変換中...';
+    showStat('HEIC画像を変換中...', 'l');
+    heicToJpeg(f)
+      .then(function(blob) { readImageBlob(blob); })
+      .catch(function() { showStat('HEIC変換に失敗しました。JPEGで試してください。', 'e'); });
+  } else {
+    readImageBlob(f);
+  }
+}
+function heicToJpeg(blob) {
+  return new Promise(function(resolve, reject) {
+    var url = URL.createObjectURL(blob);
+    var img = new Image();
+    img.onload = function() {
+      URL.revokeObjectURL(url);
+      var maxW = 1600, scale = Math.min(1, maxW / img.naturalWidth);
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(function(jpegBlob) {
+        if (jpegBlob) resolve(jpegBlob); else reject(new Error('toBlob failed'));
+      }, 'image/jpeg', 0.92);
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); reject(new Error('load failed')); };
+    img.src = url;
+  });
+}
+function readImageBlob(blob) {
+  var r = new FileReader();
+  r.onload = function(ev) {
+    var th = document.getElementById('thumb');
+    th.src = ev.target.result;
+    th.style.display = '';
+    var os = document.getElementById('oscr');
+    os.textContent = '🔍 OCR処理中...';
+    showStat('画像を解析中...', 'l');
+    loadOCR(ev.target.result, os);
+  };
+  r.readAsDataURL(blob);
+}
+
+var ocrReady = false, ocrQ = [];
+function loadOCR(url, os) {
+  if (ocrReady) { runOCR(url, os); return; }
+  ocrQ.push({ url: url, os: os });
+  if (document.getElementById('tscr')) return;
+  var s = document.createElement('script');
+  s.id = 'tscr';
+  s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+  s.onload = function() {
+    ocrReady = true;
+    ocrQ.forEach(function(q) { runOCR(q.url, q.os); });
+    ocrQ = [];
+  };
+  s.onerror = function() {
+    os.textContent = '❌ OCR読み込み失敗。ISBNタブで手動入力してください。';
+    showStat('OCR失敗。ISBNタブをお使いください。', 'e');
+    stab('isbn');
+  };
+  document.head.appendChild(s);
+}
+
+async function runOCR(url, os) {
+  try {
+    os.textContent = '🔍 日本語+英語モデルを読み込み中（初回のみ時間がかかります）...';
+    var w = await Tesseract.createWorker('eng+jpn');
+    os.textContent = '🔍 テキスト認識中...';
+    var res = await w.recognize(url);
+    await w.terminate();
+    var txt = res.data.text;
+
+    // ISBN を探す
+    var m = txt.replace(/\s/g, '').match(/(97[89]\d{10})/);
+    if (!m) {
+      var m2 = txt.match(/(97[89][\s\-]?\d[\s\-]?\d[\s\-]?\d[\s\-]?\d[\s\-]?\d[\s\-]?\d[\s\-]?\d[\s\-]?\d[\s\-]?\d[\s\-]?\d)/);
+      if (m2) m = [null, m2[1].replace(/[\s\-]/g, '')];
+    }
+
+    if (m) {
+      os.textContent = '✓ ISBN検出: ' + m[1];
+      stab('isbn');
+      document.getElementById('ii').value = m[1];
+      await doISBNVal(m[1]);
+    } else {
+      // ISBN がない場合は OCR テキストからタイトル候補を抽出してタイトル検索
+      var lines = txt.split('\n')
+        .map(function(l) { return l.trim(); })
+        .filter(function(l) { return l.length >= 2 && l.length <= 40; });
+      var titleCandidate = lines[0] || '';
+      if (titleCandidate) {
+        os.textContent = '⚠ ISBNが見つかりません。「' + titleCandidate + '」でタイトル検索します';
+        stab('title');
+        document.getElementById('ti').value = titleCandidate;
+        await doTitle();
+      } else {
+        os.textContent = '⚠ テキストを認識できませんでした。ISBNタブで手動入力してください。';
+        showStat('画像から情報を検出できませんでした。', 'e');
+        stab('isbn');
+      }
+    }
+  } catch (e) {
+    os.textContent = '❌ OCRエラー';
+    showStat('OCRエラー。ISBNタブから入力してください。', 'e');
+    stab('isbn');
+  }
+}
+
+async function fetchViaCorsProxy(targetUrl) {
+  var proxyUrls = [
+    'https://corsproxy.io/?' + encodeURIComponent(targetUrl),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl),
+    'https://thingproxy.freeboard.io/fetch/' + targetUrl,
+    'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(targetUrl)
+  ];
+  var attempts = proxyUrls.map(async function(pu) {
+    var ctrl = new AbortController();
+    var tid = setTimeout(function() { ctrl.abort(); }, 7000);
+    try {
+      var r = await fetch(pu, { signal: ctrl.signal });
+      clearTimeout(tid);
+      if (!r.ok) throw new Error('not ok');
+      var t = await r.text();
+      if (!t || t.length < 200) throw new Error('empty');
+      return t;
+    } catch(e) { clearTimeout(tid); throw e; }
+  });
+  try { return await Promise.any(attempts); } catch(e) { return ''; }
+}
+
+async function getPrice(isbn) {
+  // 版元ドットコム（税込）
+  try {
+    var r = await fetch('https://api.hanmoto.com/bd/isbn/' + isbn);
+    if (r.ok) {
+      var d = await r.json();
+      if (d) {
+        var p = d.priceincltax || d.price_incltax;
+        if (p) return String(p);
+        var pb = d.price;
+        if (pb) return String(Math.round(pb * 1.1));
+      }
+    }
+  } catch (e) {}
+  // Google Books（listPrice → retailPrice の順）
+  try {
+    var r2 = await fetch('https://www.googleapis.com/books/v1/volumes?q=isbn:' + isbn + '&maxResults=1&country=JP');
+    var d2 = await r2.json();
+    if (d2.items && d2.items[0]) {
+      var si = d2.items[0].saleInfo || {};
+      var sp = (si.listPrice && si.listPrice.currencyCode === 'JPY') ? si.listPrice
+             : (si.retailPrice && si.retailPrice.currencyCode === 'JPY') ? si.retailPrice : null;
+      if (sp && sp.amount) return String(sp.amount);
+    }
+  } catch (e) {}
+  // NDL（dcndl:price は税抜きのことが多いので 1.1 倍して丸める）
+  try {
+    var r3 = await fetch('https://ndlsearch.ndl.go.jp/api/opensearch?isbn=' + isbn + '&cnt=1');
+    var txt = await r3.text();
+    var doc3 = new DOMParser().parseFromString(txt, 'text/xml');
+    var pEls = doc3.getElementsByTagNameNS('http://ndl.go.jp/dcndl/terms/', 'price');
+    if (pEls.length) {
+      var raw = pEls[0].textContent.replace(/[^0-9]/g, '');
+      if (raw) return String(Math.round(parseInt(raw) * 1.1));
+    }
+  } catch (e) {}
+  // CORS プロキシ経由で books.or.jp から定価を取得（出版社サイト集約データ）
+  try {
+    var bjUrl = 'https://www.books.or.jp/books_detail.aspx?sku=' + isbn;
+    var html = await fetchViaCorsProxy(bjUrl);
+    if (html) {
+      // 税込表示を優先
+      var mIncl = html.match(/定価[（(]税込[）)][^\d]*([\d,]+)/) || html.match(/税込\s*([\d,]+)\s*円/);
+      if (mIncl) return mIncl[1].replace(/,/g, '');
+      // 本体価格（税抜）に 1.1 を掛けて丸める
+      var mBody = html.match(/定価[：:]\s*([\d,]+)\s*円[（(]本体[）)]/);
+      if (mBody) return String(Math.round(parseInt(mBody[1].replace(/,/g, '')) * 1.1));
+    }
+  } catch(e) {}
+  return '';
+}
+
+async function fillMissing(isbn) {
+  var fdEl = document.getElementById('fd');
+  var fpEl = document.getElementById('fp');
+  var fcEl = document.getElementById('fc');
+  var faEl  = document.getElementById('fa');
+  var fndEl = document.getElementById('fnd');
+  var needDate   = !fdEl.value.trim();
+  var needPub    = !fpEl.value.trim();
+  var needPrice  = !fcEl.value.trim();
+  var needAuthor = !faEl.value.trim();
+  var needNDC    = !fndEl.value.trim();
+  if (!needDate && !needPub && !needPrice && !needAuthor && !needNDC) return;
+
+  // Google Books で一括補完（1回のリクエスト）
+  try {
+    var r = await fetch('https://www.googleapis.com/books/v1/volumes?q=isbn:' + isbn + '&maxResults=1&country=JP');
+    var d = await r.json();
+    if (d.items && d.items[0]) {
+      var v = d.items[0].volumeInfo || {};
+      if (needDate && v.publishedDate) {
+        var fmt = v.publishedDate.replace(/-(\d+)(?:-(\d+))?$/, function(m, mo, dy) {
+          return '.' + parseInt(mo) + (dy ? '.' + parseInt(dy) : '');
+        });
+        if (fmt) { fdEl.value = fmt; needDate = false; }
+      }
+      if (needPub && v.publisher) { fpEl.value = v.publisher; needPub = false; }
+      if (needAuthor && v.authors && v.authors.length) { faEl.value = v.authors.join(', '); needAuthor = false; }
+      if (needPrice) {
+        var sp = d.items[0].saleInfo && d.items[0].saleInfo.listPrice;
+        if (sp && sp.amount && sp.currencyCode === 'JPY') { fcEl.value = String(sp.amount); needPrice = false; }
+      }
+    }
+  } catch (e) {}
+
+  // NDL XML から NDC を抽出するヘルパー（dcndl:NDC → dc:subject の順）
+  function ndcFromXml(xmlDoc) {
+    var ndcEls = xmlDoc.getElementsByTagNameNS('http://ndl.go.jp/dcndl/terms/', 'NDC');
+    for (var ni = 0; ni < ndcEls.length; ni++) {
+      var nv = ndcEls[ni].textContent.trim();
+      if (nv && /^\d/.test(nv)) return nv.split(/\s/)[0];
+    }
+    var subjEls = xmlDoc.getElementsByTagNameNS('http://purl.org/dc/elements/1.1/', 'subject');
+    for (var si2 = 0; si2 < subjEls.length; si2++) {
+      var st = subjEls[si2].textContent.trim();
+      if (/^\d{3}(\.\d+)?$/.test(st)) return st;
+    }
+    return '';
+  }
+
+  // NDL で残りを補完（needNDC も対象に含める）
+  if (needDate || needPub || needAuthor || needNDC) {
+    try {
+      var r2 = await fetch('https://iss.ndl.go.jp/api/opensearch?isbn=' + isbn + '&cnt=1');
+      var txt = await r2.text();
+      var doc2 = new DOMParser().parseFromString(txt, 'text/xml');
+      var DC = 'http://purl.org/dc/elements/1.1/';
+      function gn(tag) { var e = doc2.getElementsByTagNameNS(DC, tag); return e.length ? e[0].textContent : ''; }
+      if (needDate) {
+        var dt = gn('date');
+        if (dt) {
+          var dp = dt.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);
+          if (dp) { fdEl.value = dp[1] + '.' + parseInt(dp[2]) + (dp[3] && parseInt(dp[3]) ? '.' + parseInt(dp[3]) : ''); needDate = false; }
+        }
+      }
+      if (needPub) { var pub = gn('publisher'); if (pub) { fpEl.value = pub; needPub = false; } }
+      if (needAuthor) { var cr = gn('creator'); if (cr) { faEl.value = cr; needAuthor = false; } }
+      if (needNDC) { var nv2 = ndcFromXml(doc2); if (nv2) { fndEl.value = nv2; needNDC = false; } }
+    } catch (e) {}
+  }
+
+  // NDL の新 URL でも再試行（旧 URL がリダイレクトされる場合の保険）
+  if (needDate || needPub || needAuthor || needNDC) {
+    try {
+      var r3 = await fetch('https://ndlsearch.ndl.go.jp/api/opensearch?isbn=' + isbn + '&cnt=1');
+      var txt3 = await r3.text();
+      var doc3 = new DOMParser().parseFromString(txt3, 'text/xml');
+      var DC3 = 'http://purl.org/dc/elements/1.1/';
+      function gn3(tag) { var e = doc3.getElementsByTagNameNS(DC3, tag); return e.length ? e[0].textContent : ''; }
+      if (needDate) {
+        var dt3 = gn3('date');
+        if (dt3) {
+          var dp3 = dt3.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);
+          if (dp3) { fdEl.value = dp3[1] + '.' + parseInt(dp3[2]) + (dp3[3] && parseInt(dp3[3]) ? '.' + parseInt(dp3[3]) : ''); needDate = false; }
+        }
+      }
+      if (needPub) { var pub3 = gn3('publisher'); if (pub3) { fpEl.value = pub3; needPub = false; } }
+      if (needAuthor) { var cr3 = gn3('creator'); if (cr3) { faEl.value = cr3; needAuthor = false; } }
+      if (needNDC) { var nv3 = ndcFromXml(doc3); if (nv3) { fndEl.value = nv3; needNDC = false; } }
+    } catch (e) {}
+  }
+
+  // 版元ドットコムから NDC を取得（NDL にない場合の補完）
+  if (needNDC) {
+    try {
+      var rh = await fetch('https://api.hanmoto.com/bd/isbn/' + isbn);
+      if (rh.ok) {
+        var dh = await rh.json();
+        if (dh) {
+          var hn = dh.ndc || dh.ndc9 || dh.classification || dh.subject || '';
+          if (hn) { fndEl.value = String(hn); needNDC = false; }
+        }
+      }
+    } catch(e) {}
+  }
+
+  // CiNii Books から NDC を取得
+  if (needNDC) {
+    try {
+      var rci = await fetch('https://ci.nii.ac.jp/books/opensearch/search?isbn=' + isbn + '&count=1&format=json');
+      if (rci.ok) {
+        var dci = await rci.json();
+        var graph = dci['@graph'] || [];
+        for (var gi = 0; gi < graph.length; gi++) {
+          var subj = graph[gi]['dc:subject'];
+          if (!subj) continue;
+          var sa2 = Array.isArray(subj) ? subj : [subj];
+          for (var si3 = 0; si3 < sa2.length; si3++) {
+            var sv = (sa2[si3] && sa2[si3]['@value']) || sa2[si3] || '';
+            if (typeof sv === 'string' && /^\d{3}(\.\d+)?$/.test(sv.trim())) {
+              fndEl.value = sv.trim(); needNDC = false; break;
+            }
+          }
+          if (!needNDC) break;
+        }
+      }
+    } catch(e) {}
+  }
+
+  // 最終フォールバック：ISBN プレフィックスから主要出版社を推定
+  if (needPub && /^9784/.test(isbn)) {
+    var code2 = isbn.slice(4, 6);
+    var code3 = isbn.slice(4, 7);
+    var PUB2 = {
+      '00':'岩波書店','01':'旺文社','02':'朝日新聞出版','03':'有斐閣',
+      '04':'KADOKAWA','05':'学研プラス','06':'講談社','07':'主婦と生活社',
+      '08':'集英社','09':'小学館','10':'新潮社','11':'文化出版局',
+      '12':'中央公論新社','13':'明治書院','14':'NHK出版','15':'早川書房',
+      '16':'文藝春秋','17':'白水社','18':'三省堂','19':'徳間書店',
+      '20':'東京大学出版会','21':'岩崎書店','22':'筑摩書房','23':'東洋経済新報社',
+      '25':'ポプラ社','27':'偕成社','32':'有斐閣','34':'光文社',
+      '40':'白泉社','48':'大和書房','53':'PHP研究所','54':'秀和システム',
+      '56':'ナツメ社','58':'日経BP','65':'東洋経済新報社',
+      '77':'技術評論社','85':'翔泳社'
+    };
+    var PUB3 = {
+      '103':'NHK出版','116':'宝島社','286':'双葉社','534':'ダイヤモンド社',
+      '575':'ダイヤモンド社','496':'日本実業出版社','480':'日本経済新聞出版',
+      '297':'講談社','535':'幻冬舎','774':'SBクリエイティブ'
+    };
+    var guessed = PUB3[code3] || PUB2[code2] || '';
+    if (guessed) fpEl.value = guessed;
+  }
+
+  // 価格：版元ドットコム → Google Books (税込) の順で補完
+  if (needPrice) {
+    var p = await getPrice(isbn);
+    if (p) {
+      fcEl.value = p;
+      fcEl.classList.add('gn');
+      var ph = document.getElementById('ph');
+      ph.textContent = '✓ 各書誌DBから自動取得';
+      ph.style.display = '';
+    }
+  }
+}
+
+async function doISBN() {
+  var raw = document.getElementById('ii').value.trim().replace(/[- ]/g, '');
+  if (!raw) { showStat('ISBNを入力してください', 'e'); return; }
+  await doISBNVal(raw);
+}
+
+async function doISBNVal(raw) {
+  showStat('openBD を検索中...', 'l');
+  hidePreview();
+  var ok = false;
+  try {
+    var r = await fetch('https://api.openbd.jp/v1/get?isbn=' + raw);
+    var d = await r.json();
+    if (d && d[0]) { fOpenBD(d[0], raw); ok = true; }
+  } catch (e) {}
+  if (!ok) {
+    try {
+      showStat('Google Books を検索中...', 'l');
+      var r2 = await fetch('https://www.googleapis.com/books/v1/volumes?q=isbn:' + raw + '&maxResults=1');
+      var d2 = await r2.json();
+      if (d2.totalItems > 0) { fGoogle(d2.items[0], raw); ok = true; }
+    } catch (e) {}
+  }
+  if (!ok) {
+    try {
+      showStat('国立国会図書館を検索中...', 'l');
+      var r3 = await fetch('https://iss.ndl.go.jp/api/opensearch?isbn=' + raw + '&cnt=1');
+      var t = await r3.text();
+      if (fNDL(t, raw)) ok = true;
+    } catch (e) {}
+  }
+  if (ok) {
+    await fillMissing(raw);
+    showStat('✓ 書誌情報を取得しました。下のプレビューを確認して「リストに追加」してください', 's');
+  } else {
+    showStat('書誌情報が見つかりませんでした。手動で入力してください。', 'e');
+    document.getElementById('fn').value = raw;
+    document.getElementById('sbg').textContent = '手動入力';
+    document.getElementById('sbg').className = 'sbadge bm';
+  }
+  showPreview();
+  goTo('preview');
+}
+
+function fOpenBD(data, isbn) {
+  var s = data.summary || {}, o = data.onix || {};
+
+  // 出版年月：summary.pubdate → ONIX PublishingDate の順で取得
+  var pd = s.pubdate || '';
+  if (!pd || pd.slice(4) === '0000') {
+    try {
+      var pubDates = o.PublishingDetail && o.PublishingDetail.PublishingDate;
+      if (pubDates) {
+        var pdArr = Array.isArray(pubDates) ? pubDates : [pubDates];
+        var d01 = pdArr.find(function(x) { return x && x.PublishingDateRole === '01'; }) || pdArr[0];
+        if (d01 && d01.Date) pd = d01.Date;
+      }
+    } catch (e) {}
+  }
+  var yr = pd.slice(0, 4);
+  var mo = pd.length >= 6 ? parseInt(pd.slice(4, 6)) : 0;
+  var dy = pd.length >= 8 ? parseInt(pd.slice(6, 8)) : 0;
+  var fmt = yr ? (mo ? yr + '.' + mo + (dy ? '.' + dy : '') : yr) : '';
+
+  // 定価：税込み価格（PriceType 02/04）を優先し、税抜きのみの場合は 1.1 倍して丸める
+  var price = '';
+  try {
+    var sup = o.ProductSupply && o.ProductSupply.SupplyDetail && o.ProductSupply.SupplyDetail.Price;
+    if (sup) {
+      var arr = Array.isArray(sup) ? sup : [sup];
+      var pIncl = arr.find(function(x) { return x && x.CurrencyCode === 'JPY' && (x.PriceType === '02' || x.PriceType === '04'); });
+      var pExcl = arr.find(function(x) { return x && x.CurrencyCode === 'JPY'; });
+      var p = pIncl || pExcl;
+      if (p && p.PriceAmount != null) {
+        var pa = parseFloat(p.PriceAmount);
+        price = (!pIncl && (p.PriceType === '01' || p.PriceType === '03'))
+          ? String(Math.round(pa * 1.1))
+          : String(p.PriceAmount);
+      }
+    }
+  } catch (e) {}
+
+  // 著者：summary.author → ONIX Contributor の順
+  var author = s.author || '';
+  if (!author) {
+    try {
+      var contribs = o.DescriptiveDetail && o.DescriptiveDetail.Contributor;
+      if (contribs) {
+        var ca = Array.isArray(contribs) ? contribs : [contribs];
+        author = ca.map(function(c) { return c.PersonName || c.PersonNameInverted || ''; }).filter(Boolean).join(', ');
+      }
+    } catch(e) {}
+  }
+  // 巻号：ONIX TitleElement.PartNumber → タイトル内数字の順
+  var vol = '';
+  try {
+    var td = o.DescriptiveDetail && o.DescriptiveDetail.TitleDetail;
+    if (td) {
+      (Array.isArray(td) ? td : [td]).forEach(function(td1) {
+        if (vol) return;
+        var te = td1 && td1.TitleElement;
+        if (!te) return;
+        (Array.isArray(te) ? te : [te]).forEach(function(t) { if (!vol && t.PartNumber) vol = String(t.PartNumber); });
+      });
+    }
+  } catch(e) {}
+  if (!vol && s.title) {
+    // 「第N巻」「(N)」「（N）」パターン
+    var vm = s.title.match(/第(\d+)巻/) || s.title.match(/[（(](\d+)[）)]/);
+    if (vm) { vol = vm[1]; }
+    else {
+      // 「シリーズ名9 サブタイトル」のように非数字の後に数字が続くパターン
+      var vm2 = s.title.match(/^[^\d]+(\d+)(?:[\s　]|$)/);
+      if (vm2) vol = vm2[1];
+    }
+  }
+
+  // NDC：ONIX Subject（識別子 78/80、または NDC 形式のコード）
+  var ndc = '';
+  try {
+    var subj = o.DescriptiveDetail && o.DescriptiveDetail.Subject;
+    if (subj) {
+      var sa = Array.isArray(subj) ? subj : [subj];
+      var sn = sa.find(function(x) { return x && (x.SubjectSchemeIdentifier === '78' || x.SubjectSchemeIdentifier === '80' || x.SubjectSchemeIdentifier === 78 || x.SubjectSchemeIdentifier === 80); });
+      if (sn) ndc = String(sn.SubjectCode || '');
+      // 識別子不問で「3桁+小数」形式のコードを探す
+      if (!ndc) {
+        var snAny = sa.find(function(x) { return x && x.SubjectCode && /^\d{3}(\.\d+)?$/.test(String(x.SubjectCode)); });
+        if (snAny) ndc = String(snAny.SubjectCode);
+      }
+    }
+  } catch(e) {}
+
+  sf('ft', s.title || ''); sf('fv', vol); sf('fa', author);
+  sf('fp', s.publisher || ''); sf('fd', fmt); sf('fc', price); sf('fn', isbn); sf('fnd', ndc);
+  var ci = s.cover || '';
+  var im = document.getElementById('fimg');
+  if (ci) { im.src = ci; im.style.display = ''; } else { im.style.display = 'none'; }
+  sbadge('openBD', 'bo');
+}
+
+function fGoogle(item, isbn) {
+  var v = item.volumeInfo || {};
+  var pd = (v.publishedDate || '').replace(/-(\d+)(?:-(\d+))?$/, function(m, mo, dy) { return '.' + parseInt(mo) + (dy ? '.' + parseInt(dy) : ''); });
+  var price = '';
+  try {
+    var sp = item.saleInfo && item.saleInfo.listPrice;
+    if (sp && sp.amount && sp.currencyCode === 'JPY') price = String(sp.amount);
+  } catch (e) {}
+  sf('ft', v.title || ''); sf('fv', ''); sf('fa', (v.authors || []).join(', '));
+  sf('fp', v.publisher || ''); sf('fd', pd); sf('fc', price); sf('fn', isbn); sf('fnd', '');
+  var th = v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail);
+  var im = document.getElementById('fimg');
+  if (th) { im.src = th.replace(/^http:/, 'https:'); im.style.display = ''; } else { im.style.display = 'none'; }
+  sbadge('Google Books', 'bg');
+}
+
+function fNDL(xmlText, isbn) {
+  try {
+    var parser = new DOMParser(), doc = parser.parseFromString(xmlText, 'text/xml');
+    var items = doc.querySelectorAll('item');
+    if (!items.length) return false;
+    function gns(tag, ns) {
+      var els = doc.getElementsByTagNameNS(ns, tag);
+      return els.length ? els[0].textContent : '';
+    }
+    var DC = 'http://purl.org/dc/elements/1.1/', NDL = 'http://ndl.go.jp/dcndl/terms/';
+    sf('ft', gns('title', DC)); sf('fv', ''); sf('fa', gns('creator', DC)); sf('fp', gns('publisher', DC));
+    var dt = gns('date', DC);
+    var ndlDate = '';
+    if (dt) {
+      var ndlDp = dt.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?/);
+      ndlDate = ndlDp ? ndlDp[1] + '.' + parseInt(ndlDp[2]) + (ndlDp[3] && parseInt(ndlDp[3]) ? '.' + parseInt(ndlDp[3]) : '') : '';
+    }
+    sf('fd', ndlDate);
+    var pr = gns('price', NDL);
+    sf('fc', pr ? pr.replace(/[^0-9]/g, '') : '');
+    sf('fn', isbn);
+    sf('fnd', gns('NDC', NDL));
+    document.getElementById('fimg').style.display = 'none';
+    sbadge('NDL', 'bn');
+    return true;
+  } catch (e) { return false; }
+}
+
+async function doTitle() {
+  var q = document.getElementById('ti').value.trim();
+  if (!q) { showStat('タイトルを入力してください', 'e'); return; }
+  showStat('検索中...', 'l');
+  document.getElementById('tres').innerHTML = '';
+  try {
+    var r = await fetch('https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&maxResults=8&langRestrict=ja');
+    var d = await r.json();
+    if (!d.items || !d.items.length) { showStat('検索結果が見つかりませんでした', 'e'); return; }
+    hstat();
+    var c = document.getElementById('tres');
+    c.innerHTML = '<p style="font-size:0.75em;color:#888;margin-bottom:5px;">候補をクリックして選択：</p>';
+    d.items.forEach(function(item) {
+      var v = item.volumeInfo || {};
+      var ids = v.industryIdentifiers || [];
+      var isbn13 = (ids.find(function(x) { return x.type === 'ISBN_13'; }) || {}).identifier || '';
+      var dv = document.createElement('div');
+      dv.className = 'tri';
+      dv.innerHTML = '<strong style="font-size:0.84em;">' + esc(v.title || '(不明)') + '</strong>'
+        + '<span style="font-size:0.72em;color:#aaa;margin-left:5px;">' + esc((v.authors || []).join(', ')) + '</span>'
+        + (isbn13 ? '<span style="font-size:0.68em;color:#666;margin-left:4px;">' + esc(isbn13) + '</span>' : '');
+      dv.onclick = async function() {
+        fGoogle(item, isbn13);
+        if (isbn13) await fillMissing(isbn13);
+        showStat('✓ 書誌情報を取得しました。下のプレビューを確認して「リストに追加」してください', 's');
+        c.innerHTML = '';
+        showPreview();
+        goTo('preview');
+      };
+      c.appendChild(dv);
+    });
+  } catch (e) { showStat('検索エラー: ' + e.message, 'e'); }
+}
+
+function sf(id, val) { document.getElementById(id).value = val || ''; }
+function sbadge(label, cls) {
+  var b = document.getElementById('sbg');
+  b.textContent = label;
+  b.className = 'sbadge ' + cls;
+}
+
+function doAdd() {
+  var book = {
+    title: document.getElementById('ft').value,
+    volume: document.getElementById('fv').value,
+    author: document.getElementById('fa').value,
+    publisher: document.getElementById('fp').value,
+    pubdate: document.getElementById('fd').value,
+    price: document.getElementById('fc').value,
+    isbn: document.getElementById('fn').value,
+    ndc: document.getElementById('fnd').value
+  };
+  if (!book.title && !book.isbn) { showStat('書名またはISBNが空です', 'e'); return; }
+  books.push(book);
+  renderTable();
+  hidePreview();
+  hstat();
+  showStat('✅ 「' + (book.title || book.isbn) + '」をリストに追加しました', 's');
+  goTo('listcard');
+}
+
+function remBook(i) { books.splice(i, 1); renderTable(); }
+
+function renderTable() {
+  document.getElementById('cnt').textContent = '(' + books.length + '冊)';
+  var tb = document.getElementById('tb');
+  if (!books.length) {
+    tb.innerHTML = '<tr><td colspan="9" class="nd">まだ書籍が登録されていません</td></tr>';
+    return;
+  }
+  tb.innerHTML = books.map(function(b, i) {
+    return '<tr>'
+      + '<td title="' + esc(b.title) + '">' + esc(b.title) + '</td>'
+      + '<td>' + esc(b.volume) + '</td>'
+      + '<td>' + esc(b.author) + '</td>'
+      + '<td>' + esc(b.publisher) + '</td>'
+      + '<td>' + esc(b.pubdate) + '</td>'
+      + '<td>' + esc(b.price) + '</td>'
+      + '<td>' + esc(b.isbn) + '</td>'
+      + '<td>' + esc(b.ndc) + '</td>'
+      + '<td><button class="btn rd btn-sm" onclick="remBook(' + i + ')">削除</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
+function doExcel() {
+  if (!books.length) { showStat('リストが空です', 'e'); return; }
+  if (typeof XLSX === 'undefined') {
+    showStat('Excelライブラリの読み込みに失敗しました。ページを再読み込みしてください。', 'e');
+    return;
+  }
+  var rows = books.map(function(b) {
+    return {
+      '書名 ショメイ': b.title,
+      '巻号 カンゴ': b.volume,
+      '著者名 チョシャメイ': b.author,
+      '出版社 シュッパンシャ': b.publisher,
+      '出版年月（西暦） シュッパン セイレキ': b.pubdate,
+      '定価(円) テイカ エン': b.price,
+      'ISBN': b.isbn,
+      'NDC': b.ndc
+    };
+  });
+  var wb = XLSX.utils.book_new(), ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{ wch: 40 }, { wch: 8 }, { wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 10 }, { wch: 8 }, { wch: 16 }];
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+  var t = new Date(), ds = t.getFullYear() + ('0' + (t.getMonth() + 1)).slice(-2) + ('0' + t.getDate()).slice(-2);
+  XLSX.writeFile(wb, '書籍登録_' + ds + '.xlsx');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('ii').addEventListener('keydown', function(e) { if (e.key === 'Enter') doISBN(); });
+  document.getElementById('ti').addEventListener('keydown', function(e) { if (e.key === 'Enter') doTitle(); });
+});
+</script>
+</body>
+</html>
