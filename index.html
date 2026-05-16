@@ -64,6 +64,36 @@
   tr:hover td{background:rgba(255,255,255,0.03);}
   .nd{text-align:center;color:#555;padding:20px 0;font-size:0.84em;}
   .ar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;justify-content:flex-end;}
+  .ltabs{display:flex;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.1);}
+  .ltb{flex:1;padding:8px 4px;background:none;border:none;color:#777;cursor:pointer;font-size:0.84em;border-bottom:2px solid transparent;transition:all .2s;text-align:center;font-weight:bold;}
+  .ltb.on{color:#c8b4ff;border-bottom-color:#c8b4ff;}
+  .ltb .lcnt{font-size:0.82em;color:#888;font-weight:normal;margin-left:3px;}
+  .ltb.on .lcnt{color:#c8b4ff;}
+  .hold{background:#f59e0b;color:#fff;}
+  .hold:hover{background:#d97706;}
+  .back{background:#10b981;color:#fff;}
+  .back:hover{background:#059669;}
+  /* NDC比率カード */
+  .ndc-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;margin-bottom:12px;}
+  .ndc-card h3{font-size:0.82em;color:#c8b4ff;margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .ndc-mode{display:inline-flex;margin-left:auto;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:6px;overflow:hidden;}
+  .ndc-mode button{background:none;border:none;color:#888;padding:3px 10px;font-size:0.72em;cursor:pointer;transition:all .15s;}
+  .ndc-mode button.on{background:rgba(124,58,237,0.35);color:#fff;}
+  .ndc-note{font-size:0.66em;color:#888;text-align:center;margin-top:3px;}
+  .ndc-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:560px){.ndc-row{grid-template-columns:1fr;}}
+  .ndc-col{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;}
+  .ndc-col h4{font-size:0.76em;color:#aaa;margin-bottom:8px;text-align:center;font-weight:normal;display:flex;align-items:baseline;justify-content:center;gap:4px;flex-wrap:wrap;}
+  .ndc-col h4 b{color:#c8b4ff;font-weight:bold;}
+  .ndc-col h4 .ndc-total{color:#fcd34d;font-weight:bold;margin-left:4px;}
+  .ndc-col h4 .ndc-total-lbl{color:#888;}
+  .ndc-pie-wrap{display:flex;align-items:center;gap:10px;}
+  .ndc-pie{flex-shrink:0;width:90px;height:90px;}
+  .ndc-legend{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .ndc-leg{display:flex;align-items:center;gap:5px;font-size:0.64em;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ndc-leg .sw{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
+  .ndc-leg .n{color:#888;margin-left:auto;padding-left:6px;font-variant-numeric:tabular-nums;}
+  .ndc-empty{text-align:center;color:#555;font-size:0.78em;padding:18px 0;}
   .tri{padding:6px 8px;margin-bottom:4px;background:rgba(255,255,255,0.05);border-radius:5px;cursor:pointer;border:1px solid transparent;transition:border-color .15s;font-size:0.84em;}
   .tri:hover{border-color:#c8b4ff;}
   input[type="checkbox"]{width:15px;height:15px;accent-color:#c8b4ff;cursor:pointer;vertical-align:middle;}
@@ -144,17 +174,44 @@
   </div>
 
   <div class="card" id="listcard">
-    <h2>📋 登録リスト <span id="cnt" style="font-size:0.78em;color:#888;"></span></h2>
+    <div class="ltabs">
+      <button class="ltb on" id="ltb-active" onclick="switchListTab('active')">📋 登録 <span class="lcnt" id="cnt-active">(0冊)</span></button>
+      <button class="ltb" id="ltb-held" onclick="switchListTab('held')">⏸ 保留 <span class="lcnt" id="cnt-held">(0冊)</span></button>
+    </div>
+    <div class="ndc-card" id="ndc-card">
+      <h3>📊 NDC構成比（1桁目）
+        <div class="ndc-mode">
+          <button id="ndc-mode-count" class="on" onclick="setNDCMode('count')">冊数</button>
+          <button id="ndc-mode-price" onclick="setNDCMode('price')">金額</button>
+        </div>
+      </h3>
+      <div class="ndc-row">
+        <div class="ndc-col" id="ndc-col-active"></div>
+        <div class="ndc-col" id="ndc-col-held"></div>
+      </div>
+    </div>
     <div class="tw">
       <table>
         <thead><tr><th style="width:32px;text-align:center;"><input type="checkbox" id="chkAll" onchange="toggleAll(this)" title="全選択"></th><th>書名</th><th>叢書</th><th>巻号</th><th>判型</th><th>著者名</th><th>出版社</th><th>出版年月</th><th>定価(円)</th><th>ISBN</th><th>NDC</th><th>操作</th></tr></thead>
         <tbody id="tb"><tr><td colspan="12" class="nd">まだ書籍が登録されていません</td></tr></tbody>
       </table>
     </div>
-    <div class="ar">
+    <div class="ar" id="ar-active">
+      <button class="btn hold" onclick="holdSelected()">⏸ 選択を保留に</button>
+      <button class="btn rd" onclick="remSelected()">✕ 選択削除</button>
+      <button class="btn rd" onclick="remAll()" style="background:#991b1b;">🗑 全件削除</button>
+      <button class="btn cy" onclick="doImportExcel()">📂 書籍登録.xlsxから読込</button>
+      <button class="btn pu" onclick="doExcel()">📥 Excelダウンロード</button>
+      <button class="btn pu" onclick="doKanekoExcel()" style="background:#0e7490;">📥 金子format（テンプレート読込）</button>
+      <button class="btn pu" onclick="doHatchushoExcel()" style="background:#1d6a3a;">📥 発注書（04タブ）に書き出す</button>
+    </div>
+    <div class="ar" id="ar-held" style="display:none;">
+      <button class="btn back" onclick="unholdSelected()">↩ 選択を登録に戻す</button>
       <button class="btn rd" onclick="remSelected()">✕ 選択削除</button>
       <button class="btn rd" onclick="remAll()" style="background:#991b1b;">🗑 全件削除</button>
       <button class="btn pu" onclick="doExcel()">📥 Excelダウンロード</button>
+      <button class="btn pu" onclick="doKanekoExcel()" style="background:#0e7490;">📥 金子format（テンプレート読込）</button>
+      <button class="btn pu" onclick="doHatchushoExcel()" style="background:#1d6a3a;">📥 発注書（04タブ）に書き出す</button>
     </div>
   </div>
 </div>
@@ -173,6 +230,7 @@
 
 <script>
 var books = [];
+var currentListTab = 'active'; // 'active' or 'held'
 
 function ndcFromXml(xmlDoc) {
   var ndcEls = xmlDoc.getElementsByTagNameNS('http://ndl.go.jp/dcndl/terms/', 'NDC');
@@ -219,7 +277,12 @@ function saveBooksToStorage() {
 function loadBooksFromStorage() {
   try {
     var s = localStorage.getItem('bookRegisterList');
-    if (s) { books = JSON.parse(s) || []; renderTable(); }
+    if (s) {
+      books = JSON.parse(s) || [];
+      // 既存データには held プロパティがないので false で補完
+      books.forEach(function(b) { if (typeof b.held === 'undefined') b.held = false; });
+      renderTable();
+    }
   } catch(e) {}
 }
 
@@ -939,10 +1002,13 @@ function doAdd() {
     pubdate: document.getElementById('fd').value,
     price: document.getElementById('fc').value,
     isbn: document.getElementById('fn').value,
-    ndc: document.getElementById('fnd').value
+    ndc: document.getElementById('fnd').value,
+    held: false
   };
   if (!book.title && !book.isbn) { showStat('書名またはISBNが空です', 'e'); return; }
   books.push(book);
+  currentListTab = 'active'; // 新規追加は登録タブで表示
+  applyListTabUI();
   renderTable();
   saveBooksToStorage();
   hidePreview();
@@ -951,7 +1017,50 @@ function doAdd() {
   goTo('listcard');
 }
 
+// 現タブの本（books の参照を返す）
+function visibleBooks() {
+  return books.filter(function(b) { return currentListTab === 'held' ? !!b.held : !b.held; });
+}
+
+// 現タブの本の books 配列内インデックス一覧
+function visibleIndices() {
+  var idxs = [];
+  books.forEach(function(b, i) {
+    if (currentListTab === 'held' ? !!b.held : !b.held) idxs.push(i);
+  });
+  return idxs;
+}
+
+function switchListTab(t) {
+  currentListTab = t;
+  applyListTabUI();
+  renderTable();
+}
+
+function applyListTabUI() {
+  document.getElementById('ltb-active').classList.toggle('on', currentListTab === 'active');
+  document.getElementById('ltb-held').classList.toggle('on', currentListTab === 'held');
+  document.getElementById('ar-active').style.display = currentListTab === 'active' ? '' : 'none';
+  document.getElementById('ar-held').style.display = currentListTab === 'held' ? '' : 'none';
+}
+
 function remBook(i) { books.splice(i, 1); renderTable(); saveBooksToStorage(); }
+
+function holdBook(i) {
+  if (!books[i]) return;
+  books[i].held = true;
+  renderTable();
+  saveBooksToStorage();
+  showStat('1冊を保留に移しました', 's');
+}
+
+function unholdBook(i) {
+  if (!books[i]) return;
+  books[i].held = false;
+  renderTable();
+  saveBooksToStorage();
+  showStat('1冊を登録に戻しました', 's');
+}
 
 function toggleAll(cb) {
   document.querySelectorAll('.rowchk').forEach(function(c) {
@@ -960,8 +1069,12 @@ function toggleAll(cb) {
   });
 }
 
+function getCheckedIndices() {
+  return Array.from(document.querySelectorAll('.rowchk:checked')).map(function(c) { return parseInt(c.dataset.i); });
+}
+
 function remSelected() {
-  var idxs = Array.from(document.querySelectorAll('.rowchk:checked')).map(function(c) { return parseInt(c.dataset.i); });
+  var idxs = getCheckedIndices();
   if (!idxs.length) { showStat('削除する本にチェックを入れてください', 'e'); return; }
   idxs.sort(function(a, b) { return b - a; });
   idxs.forEach(function(i) { books.splice(i, 1); });
@@ -971,9 +1084,31 @@ function remSelected() {
   showStat(idxs.length + '冊を削除しました', 's');
 }
 
+function holdSelected() {
+  var idxs = getCheckedIndices();
+  if (!idxs.length) { showStat('保留にする本にチェックを入れてください', 'e'); return; }
+  idxs.forEach(function(i) { if (books[i]) books[i].held = true; });
+  document.getElementById('chkAll').checked = false;
+  renderTable();
+  saveBooksToStorage();
+  showStat(idxs.length + '冊を保留に移しました', 's');
+}
+
+function unholdSelected() {
+  var idxs = getCheckedIndices();
+  if (!idxs.length) { showStat('登録に戻す本にチェックを入れてください', 'e'); return; }
+  idxs.forEach(function(i) { if (books[i]) books[i].held = false; });
+  document.getElementById('chkAll').checked = false;
+  renderTable();
+  saveBooksToStorage();
+  showStat(idxs.length + '冊を登録に戻しました', 's');
+}
+
 function remAll() {
-  if (!books.length) { showStat('リストが空です', 'e'); return; }
-  document.getElementById('modal-msg').textContent = '登録中の ' + books.length + ' 冊をすべて削除します。この操作は取り消せません。';
+  var vis = visibleBooks();
+  if (!vis.length) { showStat('リストが空です', 'e'); return; }
+  var label = currentListTab === 'held' ? '保留中' : '登録中';
+  document.getElementById('modal-msg').textContent = label + 'の ' + vis.length + ' 冊をすべて削除します。この操作は取り消せません。';
   document.getElementById('modal-overlay').classList.add('show');
 }
 function modalClose() {
@@ -981,21 +1116,216 @@ function modalClose() {
 }
 function modalConfirm() {
   modalClose();
-  books = [];
+  // 現タブの本のみ削除
+  books = books.filter(function(b) { return currentListTab === 'held' ? !b.held : !!b.held; });
   renderTable();
   saveBooksToStorage();
   showStat('リストをすべて削除しました', 's');
 }
 
+// === NDC構成比チャート ===
+var NDC_LABELS = ['0 総記', '1 哲学', '2 歴史', '3 社会科学', '4 自然科学', '5 技術', '6 産業', '7 芸術', '8 言語', '9 文学'];
+var NDC_COLORS = ['#9ca3af','#a78bfa','#f472b6','#fb923c','#34d399','#22d3ee','#fbbf24','#f87171','#60a5fa','#c084fc'];
+var NDC_UNKNOWN_COLOR = '#4b5563';
+var ndcMode = 'count'; // 'count' or 'price'
+
+function ndcFirstDigit(ndc) {
+  if (!ndc) return -1;
+  var s = String(ndc).trim();
+  // 全角数字→半角
+  s = s.replace(/[０-９]/g, function(ch) { return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0); });
+  var m = s.match(/[0-9]/);
+  if (!m) return -1;
+  return parseInt(m[0], 10);
+}
+
+function parsePrice(p) {
+  if (p === null || p === undefined || p === '') return NaN;
+  var n = parseInt(String(p).replace(/[,，\s]/g, ''), 10);
+  return isNaN(n) ? NaN : n;
+}
+
+function tallyNDC(target) {
+  var counts = new Array(10).fill(0);
+  var prices = new Array(10).fill(0);
+  var unknownCount = 0, unknownPrice = 0;
+  var pricedCount = 0;   // 金額が有効な本の数
+  var totalPrice = 0;
+  target.forEach(function(b) {
+    var d = ndcFirstDigit(b.ndc);
+    var pr = parsePrice(b.price);
+    var hasPrice = !isNaN(pr) && pr > 0;
+    if (d >= 0 && d <= 9) {
+      counts[d]++;
+      if (hasPrice) { prices[d] += pr; pricedCount++; totalPrice += pr; }
+    } else {
+      unknownCount++;
+      if (hasPrice) { unknownPrice += pr; pricedCount++; totalPrice += pr; }
+    }
+  });
+  return {
+    counts: counts, prices: prices,
+    unknownCount: unknownCount, unknownPrice: unknownPrice,
+    total: target.length, pricedCount: pricedCount, totalPrice: totalPrice
+  };
+}
+
+function pieSlicePath(cx, cy, r, startAngle, endAngle) {
+  // 単一スライス（100%）なら円を1本のパスで描く
+  var full = endAngle - startAngle;
+  if (full >= Math.PI * 2 - 0.0001) {
+    return 'M ' + cx + ' ' + (cy - r) +
+           ' A ' + r + ' ' + r + ' 0 1 1 ' + (cx - 0.001) + ' ' + (cy - r) + ' Z';
+  }
+  var x1 = cx + r * Math.sin(startAngle);
+  var y1 = cy - r * Math.cos(startAngle);
+  var x2 = cx + r * Math.sin(endAngle);
+  var y2 = cy - r * Math.cos(endAngle);
+  var largeArc = (endAngle - startAngle) > Math.PI ? 1 : 0;
+  return 'M ' + cx + ' ' + cy + ' L ' + x1 + ' ' + y1 +
+         ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + x2 + ' ' + y2 + ' Z';
+}
+
+function fmtYen(n) {
+  if (!n) return '¥0';
+  return '¥' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function buildNDCColumn(label, target) {
+  var t = tallyNDC(target);
+
+  // タイトル：本数と合計金額（合計は常に集計済み本の合計）
+  function makeTitle(showTotal) {
+    var titleHtml = '<h4><b>' + label + '</b>（' + t.total + '冊）';
+    if (showTotal) {
+      titleHtml += '<span class="ndc-total-lbl">合計</span><span class="ndc-total">' + fmtYen(t.totalPrice) + '</span>';
+    }
+    titleHtml += '</h4>';
+    return titleHtml;
+  }
+
+  if (!t.total) {
+    return makeTitle(false)
+         + '<div class="ndc-empty">該当する書籍がありません</div>';
+  }
+
+  // スライス全体の母数（モードで切替）
+  var denom;
+  if (ndcMode === 'price') {
+    denom = t.totalPrice;
+    if (denom <= 0) {
+      // 金額モードだが定価入力ゼロ
+      return makeTitle(true)
+           + '<div class="ndc-empty">金額が入力された書籍がありません</div>';
+    }
+  } else {
+    denom = t.total;
+  }
+
+  // スライスデータ作成
+  var slices = [];
+  for (var i = 0; i < 10; i++) {
+    if (t.counts[i] > 0) {
+      slices.push({
+        idx: i, label: NDC_LABELS[i], color: NDC_COLORS[i],
+        count: t.counts[i], price: t.prices[i]
+      });
+    }
+  }
+  if (t.unknownCount > 0) {
+    slices.push({
+      idx: -1, label: '未分類', color: NDC_UNKNOWN_COLOR,
+      count: t.unknownCount, price: t.unknownPrice
+    });
+  }
+
+  // 金額モードでは金額0の分類はスライスから除く（角度0になるため）
+  var drawSlices = ndcMode === 'price'
+    ? slices.filter(function(s) { return s.price > 0; })
+    : slices;
+
+  // SVG 描画
+  var cx = 45, cy = 45, r = 42;
+  var svg = '<svg class="ndc-pie" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">';
+  var ang = 0;
+  drawSlices.forEach(function(s) {
+    var val = ndcMode === 'price' ? s.price : s.count;
+    var frac = val / denom;
+    var nextAng = ang + frac * Math.PI * 2;
+    svg += '<path d="' + pieSlicePath(cx, cy, r, ang, nextAng) + '" fill="' + s.color + '" stroke="#1a1a2e" stroke-width="1"></path>';
+    ang = nextAng;
+  });
+  svg += '</svg>';
+
+  // 凡例（モードに応じた値で多い順）
+  var legendSlices = slices.slice().sort(function(a,b){
+    var av = ndcMode === 'price' ? a.price : a.count;
+    var bv = ndcMode === 'price' ? b.price : b.count;
+    return bv - av;
+  });
+  var legend = legendSlices.map(function(s) {
+    var pctVal = ndcMode === 'price' ? s.price : s.count;
+    var pct = denom > 0 ? (pctVal / denom * 100) : 0;
+    var pctStr = pct >= 10 ? pct.toFixed(0) : pct.toFixed(1);
+    var dim = ndcMode === 'price' && s.price === 0; // 金額モードで¥0は淡色
+    var style = dim ? ' style="opacity:0.45;"' : '';
+    var titleAttr = esc(s.label) + ' ' + s.count + '冊 ' + fmtYen(s.price);
+    return '<div class="ndc-leg" title="' + titleAttr + '"' + style + '>'
+         + '<span class="sw" style="background:' + s.color + ';"></span>'
+         + '<span>' + esc(s.label) + '</span>'
+         + '<span class="n">' + s.count + '冊 ' + pctStr + '% / ' + fmtYen(s.price) + '</span>'
+         + '</div>';
+  }).join('');
+
+  // 注記（金額モード時、未入力があれば表示）
+  var note = '';
+  if (ndcMode === 'price' && t.pricedCount < t.total) {
+    note = '<div class="ndc-note">' + t.total + '冊中' + t.pricedCount + '冊を集計（定価未入力 ' + (t.total - t.pricedCount) + '冊を除外）</div>';
+  }
+
+  return makeTitle(true)
+       + '<div class="ndc-pie-wrap">' + svg + '<div class="ndc-legend">' + legend + '</div></div>'
+       + note;
+}
+
+function setNDCMode(mode) {
+  ndcMode = mode;
+  document.getElementById('ndc-mode-count').classList.toggle('on', mode === 'count');
+  document.getElementById('ndc-mode-price').classList.toggle('on', mode === 'price');
+  renderNDCChart();
+}
+
+function renderNDCChart() {
+  var actBooks = books.filter(function(b) { return !b.held; });
+  var heldBooks = books.filter(function(b) { return !!b.held; });
+  document.getElementById('ndc-col-active').innerHTML = buildNDCColumn('📋 登録', actBooks);
+  document.getElementById('ndc-col-held').innerHTML   = buildNDCColumn('⏸ 保留', heldBooks);
+}
+
 function renderTable() {
-  document.getElementById('cnt').textContent = '(' + books.length + '冊)';
+  renderNDCChart();
+  // 件数をタブに表示
+  var activeCount = books.filter(function(b) { return !b.held; }).length;
+  var heldCount   = books.filter(function(b) { return !!b.held; }).length;
+  document.getElementById('cnt-active').textContent = '(' + activeCount + '冊)';
+  document.getElementById('cnt-held').textContent   = '(' + heldCount + '冊)';
   document.getElementById('chkAll').checked = false;
+
   var tb = document.getElementById('tb');
-  if (!books.length) {
-    tb.innerHTML = '<tr><td colspan="12" class="nd">まだ書籍が登録されていません</td></tr>';
+  var idxs = visibleIndices();
+  if (!idxs.length) {
+    var msg = currentListTab === 'held'
+      ? '保留中の書籍はありません'
+      : 'まだ書籍が登録されていません';
+    tb.innerHTML = '<tr><td colspan="12" class="nd">' + msg + '</td></tr>';
     return;
   }
-  tb.innerHTML = books.map(function(b, i) {
+  var actionBtn = currentListTab === 'held'
+    ? function(i) { return '<button class="btn back btn-sm" onclick="unholdBook(' + i + ')" title="登録に戻す">↩ 戻す</button>'; }
+    : function(i) { return '<button class="btn hold btn-sm" onclick="holdBook(' + i + ')" title="保留に移す">⏸ 保留</button>'; };
+
+  tb.innerHTML = idxs.map(function(i) {
+    var b = books[i];
     return '<tr>'
       + '<td style="text-align:center;"><input type="checkbox" class="rowchk" data-i="' + i + '" onchange="this.closest(\'tr\').classList.toggle(\'sel\',this.checked)"></td>'
       + '<td title="' + esc(b.title) + '">' + esc(b.title) + '</td>'
@@ -1005,10 +1335,10 @@ function renderTable() {
       + '<td>' + esc(b.author) + '</td>'
       + '<td>' + esc(b.publisher) + '</td>'
       + '<td>' + esc(b.pubdate) + '</td>'
-      + '<td>' + esc(b.price) + '</td>'
+      + '<td>' + esc(fmtPrice(b.price)) + '</td>'
       + '<td>' + esc(b.isbn) + '</td>'
       + '<td>' + esc(b.ndc) + '</td>'
-      + '<td><button class="btn rd btn-sm" onclick="remBook(' + i + ')">削除</button></td>'
+      + '<td style="white-space:nowrap;">' + actionBtn(i) + ' <button class="btn rd btn-sm" onclick="remBook(' + i + ')">削除</button></td>'
       + '</tr>';
   }).join('');
 }
@@ -1077,6 +1407,7 @@ async function fetchNDCOnly(isbn) {
 async function autoRetryNDC() {
   var today = new Date(); today.setHours(0, 0, 0, 0);
   var targets = books.map(function(b, i) { return { i: i, b: b }; }).filter(function(x) {
+    if (x.b.held) return false; // 保留中は対象外
     if (x.b.ndc || !x.b.isbn) return false;
     var pd = pubdateToDate(x.b.pubdate);
     return pd && (today - pd) / 86400000 >= 4;
@@ -1094,13 +1425,143 @@ async function autoRetryNDC() {
   }
 }
 
+function fmtPrice(p) {
+  var n = parseInt(p);
+  if (!p || isNaN(n)) return p || '';
+  return n >= 1000 ? n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : String(n);
+}
+
+function doImportExcel() {
+  if (typeof XLSX === 'undefined') { showStat('Excelライブラリの読み込みに失敗しました。', 'e'); return; }
+  var inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.xlsx,.xls'; inp.style.display = 'none';
+  document.body.appendChild(inp);
+  inp.onchange = function(e) {
+    var file = e.target.files[0];
+    document.body.removeChild(inp);
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var wb = XLSX.read(new Uint8Array(ev.target.result), {type: 'array', cellDates: true});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var data = XLSX.utils.sheet_to_json(ws, {header: 1, defval: '', raw: true});
+        if (data.length < 2) { showStat('データが見つかりません', 'e'); return; }
+        function xlDateStr(v) {
+          if (!v) return '';
+          if (typeof v === 'string') return v;
+          if (v instanceof Date) return v.getFullYear() + '.' + (v.getMonth()+1) + '.' + v.getDate();
+          if (typeof v === 'number') {
+            var d = new Date(Math.round((v - 25569) * 86400 * 1000));
+            return d.getUTCFullYear() + '.' + (d.getUTCMonth()+1) + '.' + d.getUTCDate();
+          }
+          return String(v);
+        }
+        var imported = 0;
+        for (var i = 1; i < data.length; i++) {
+          var row = data[i];
+          if (!row || (!row[0] && !row[8])) continue;
+          var isbn = row[8] ? String(row[8]).replace(/[\s\-]/g, '') : '';
+          if (isbn && books.some(function(b) { return b.isbn === isbn; })) continue;
+          books.push({
+            title: String(row[0] || ''), series: String(row[1] || ''),
+            volume: String(row[2] || ''), format: String(row[3] || ''),
+            author: String(row[4] || ''), publisher: String(row[5] || ''),
+            pubdate: xlDateStr(row[6]),
+            price: row[7] ? String(typeof row[7] === 'number' ? Math.round(row[7]) : row[7]) : '',
+            isbn: isbn, ndc: String(row[9] || ''),
+            held: false
+          });
+          imported++;
+        }
+        renderTable(); saveBooksToStorage();
+        if (imported > 0) {
+          currentListTab = 'active';
+          applyListTabUI();
+          renderTable();
+        }
+        showStat('✅ ' + imported + '冊を読み込みました', 's');
+      } catch(err) { showStat('読込エラー: ' + err.message, 'e'); }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+  inp.click();
+}
+
+function doHatchushoExcel() {
+  var target = visibleBooks();
+  if (!target.length) { showStat('リストが空です', 'e'); return; }
+  if (typeof XLSX === 'undefined') { showStat('Excelライブラリの読み込みに失敗しました。', 'e'); return; }
+  var inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.xlsx,.xls'; inp.style.display = 'none';
+  document.body.appendChild(inp);
+  showStat('【2026発注書】.xlsx を選択してください', 'i');
+  inp.onchange = function(e) {
+    var file = e.target.files[0];
+    document.body.removeChild(inp);
+    if (!file) return;
+    showStat('発注書を読み込み中...', 'l');
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var wb = XLSX.read(new Uint8Array(ev.target.result), {type: 'array', cellStyles: true});
+
+        // Sheet1 へ書き込み
+        var ws1 = wb.Sheets['Sheet1'];
+        if (!ws1) throw new Error('発注書に Sheet1 が見つかりません');
+        var ref1 = XLSX.utils.decode_range(ws1['!ref'] || 'A1:J1');
+        for (var r = 1; r <= ref1.e.r; r++) {
+          for (var c = 0; c <= 9; c++) delete ws1[XLSX.utils.encode_cell({r: r, c: c})];
+        }
+        target.forEach(function(b, i) {
+          var row = i + 1;
+          function sc(col, val, type) {
+            if (val === null || val === undefined || val === '') return;
+            ws1[XLSX.utils.encode_cell({r: row, c: col})] = {v: val, t: type || 's'};
+          }
+          sc(0, b.title); sc(1, b.series); sc(2, b.volume); sc(3, b.format);
+          sc(4, b.author); sc(5, b.publisher); sc(6, b.pubdate);
+          var p = parseInt(b.price); sc(7, isNaN(p) ? (b.price || '') : p, isNaN(p) ? 's' : 'n');
+          sc(8, b.isbn || ''); sc(9, b.ndc || '');
+        });
+        ws1['!ref'] = XLSX.utils.encode_range({s: {r:0, c:0}, e: {r: target.length, c: 9}});
+
+        // ISBN一覧 へ書き込み
+        var wsIsbn = wb.Sheets['ISBN一覧'];
+        if (wsIsbn) {
+          var refIsbn = XLSX.utils.decode_range(wsIsbn['!ref'] || 'A1:B1');
+          for (var ri = 1; ri <= refIsbn.e.r; ri++) {
+            delete wsIsbn[XLSX.utils.encode_cell({r: ri, c: 0})];
+            delete wsIsbn[XLSX.utils.encode_cell({r: ri, c: 1})];
+          }
+          target.forEach(function(b, i) {
+            var ri2 = i + 1;
+            wsIsbn[XLSX.utils.encode_cell({r: ri2, c: 0})] = {v: ri2, t: 'n'};
+            wsIsbn[XLSX.utils.encode_cell({r: ri2, c: 1})] = {v: b.isbn || '', t: 's'};
+          });
+          wsIsbn['!ref'] = XLSX.utils.encode_range({s: {r:0, c:0}, e: {r: target.length, c: 1}});
+        }
+
+        var t = new Date();
+        var ds = t.getFullYear() + ('0'+(t.getMonth()+1)).slice(-2) + ('0'+t.getDate()).slice(-2);
+        var suffix = currentListTab === 'held' ? '_保留' : '';
+        XLSX.writeFile(wb, '【2026発注書】入力済' + suffix + '_' + ds + '.xlsx', {cellStyles: true});
+        showStat('✅ 発注書に書き出しました（' + target.length + '冊）。Excelで開くと04タブに自動反映されます。', 's');
+      } catch(err) { showStat('エラー: ' + err.message, 'e'); }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+  inp.click();
+}
+
 function doExcel() {
-  if (!books.length) { showStat('リストが空です', 'e'); return; }
+  var target = visibleBooks();
+  if (!target.length) { showStat('リストが空です', 'e'); return; }
   if (typeof XLSX === 'undefined') {
     showStat('Excelライブラリの読み込みに失敗しました。ページを再読み込みしてください。', 'e');
     return;
   }
-  var rows = books.map(function(b) {
+  var rows = target.map(function(b) {
     return {
       '書名 ショメイ': b.title,
       '叢書 ソウショ': b.series,
@@ -1116,9 +1577,103 @@ function doExcel() {
   });
   var wb = XLSX.utils.book_new(), ws = XLSX.utils.json_to_sheet(rows);
   ws['!cols'] = [{ wch: 40 }, { wch: 20 }, { wch: 8 }, { wch: 8 }, { wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 10 }, { wch: 8 }, { wch: 16 }];
+  // 定価列（H列 = 0-indexed 7）を数値＋カンマ書式に変換
+  var priceRange = XLSX.utils.decode_range(ws['!ref']);
+  for (var R = 1; R <= priceRange.e.r; R++) {
+    var pAddr = XLSX.utils.encode_cell({r: R, c: 7});
+    if (ws[pAddr]) {
+      var pv = parseInt(String(ws[pAddr].v).replace(/[,，]/g, ''));
+      if (!isNaN(pv) && pv > 0) { ws[pAddr].v = pv; ws[pAddr].t = 'n'; ws[pAddr].z = '#,##0'; }
+    }
+  }
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
   var t = new Date(), ds = t.getFullYear() + ('0' + (t.getMonth() + 1)).slice(-2) + ('0' + t.getDate()).slice(-2);
-  XLSX.writeFile(wb, '書籍登録_' + ds + '.xlsx');
+  var suffix = currentListTab === 'held' ? '_保留' : '';
+  XLSX.writeFile(wb, '書籍登録' + suffix + '_' + ds + '.xlsx');
+}
+
+function kanekoSetCell(ws, col, row, value, type) {
+  var addr = XLSX.utils.encode_cell({c: col, r: row});
+  if (!ws[addr]) ws[addr] = {};
+  ws[addr].v = value;
+  ws[addr].t = type;
+  delete ws[addr].f;  // フォーミュラがあれば削除
+  delete ws[addr].w;  // キャッシュ済み表示値をリセット
+  var range = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : {s:{c:0,r:0},e:{c:0,r:0}};
+  if (col > range.e.c) range.e.c = col;
+  if (row > range.e.r) range.e.r = row;
+  ws['!ref'] = XLSX.utils.encode_range(range);
+}
+
+function doKanekoExcel() {
+  var target = visibleBooks();
+  if (!target.length) { showStat('リストが空です', 'e'); return; }
+  if (typeof XLSX === 'undefined') {
+    showStat('Excelライブラリの読み込みに失敗しました。ページを再読み込みしてください。', 'e'); return;
+  }
+
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.xlsx,.xls';
+  inp.style.display = 'none';
+  document.body.appendChild(inp);
+
+  inp.onchange = function(e) {
+    var file = e.target.files[0];
+    document.body.removeChild(inp);
+    if (!file) return;
+
+    showStat('テンプレート読み込み中...', 's');
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var wb = XLSX.read(new Uint8Array(ev.target.result), {type: 'array', cellStyles: true});
+        var sheetName = wb.SheetNames[0];
+        var ws = wb.Sheets[sheetName];
+
+        var PER = 6, BLOCK = 22;
+        var numBlocks = Math.ceil(target.length / PER);
+
+        for (var bi = 0; bi < numBlocks; bi++) {
+          var grp = target.slice(bi * PER, bi * PER + PER);
+          for (var j = 0; j < grp.length; j++) {
+            var b = grp[j];
+            if (!b) continue;
+
+            // 0-indexed row offsets within block
+            var dataR  = bi * BLOCK + 3;  // +3: 書誌データ行
+            var authR  = bi * BLOCK + 11; // +11: 著者名行
+            var priceR = bi * BLOCK + 20; // +20: 価格行
+
+            // 0-indexed column offsets for book j
+            var cISBN  = j * 3;
+            var cTitle = j * 3 + 1;
+            var cPub   = j * 3 + 2;
+
+            var isn = b.isbn ? b.isbn.replace(/[- ]/g, '') : '';
+            var titleStr = b.title + (b.series ? '（' + b.series + '）' : '');
+            var p = b.price ? (parseInt(b.price) || null) : null;
+
+            kanekoSetCell(ws, cISBN,  dataR,  isn,                 's');
+            kanekoSetCell(ws, cTitle, dataR,  titleStr,            's');
+            kanekoSetCell(ws, cPub,   dataR,  b.publisher || '',   's');
+            kanekoSetCell(ws, cPub,   authR,  b.author    || '',   's');
+            if (p !== null) kanekoSetCell(ws, cTitle, priceR, p,   'n');
+          }
+        }
+
+        var t = new Date(), ds = t.getFullYear() + ('0'+(t.getMonth()+1)).slice(-2) + ('0'+t.getDate()).slice(-2);
+        var suffix = currentListTab === 'held' ? '_保留' : '';
+        XLSX.writeFile(wb, '発注書_金子format' + suffix + '_' + ds + '.xlsx', {cellStyles: true});
+        showStat('テンプレートに入力して保存しました（' + target.length + '冊）', 's');
+      } catch(err) {
+        showStat('エラー: ' + err.message, 'e');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  inp.click();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1132,6 +1687,8 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   document.addEventListener('keydown', function(e) { if (e.key === 'Escape') modalClose(); });
   loadBooksFromStorage();
+  applyListTabUI();
+  renderNDCChart();
   autoRetryNDC();
   setInterval(autoRetryNDC, 60 * 60 * 1000);
 });
